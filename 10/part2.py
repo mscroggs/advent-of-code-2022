@@ -1,7 +1,8 @@
 x = 1
-cycle = 1
+xpos = 0
+ypos = 0
 
-add_me = [20, 60, 100, 140, 180, 220]
+display = [[" " for _ in range(40)] for _ in range(6)]
 
 total = 0
 with open("input") as f:
@@ -15,9 +16,14 @@ with open("input") as f:
             n = int(line[5:])
             time = 2
         for i in range(time):
-            cycle += 1
+            xpos += 1
+            if xpos >= 40:
+                xpos = 0
+                ypos += 1
             if i == time - 1:
                 x += n
-            if cycle in add_me:
-                total += cycle * x
-print(total)
+            if abs(x - xpos) <= 1:
+                display[ypos][xpos] = "#"
+
+for row in display:
+    print("".join(row))
