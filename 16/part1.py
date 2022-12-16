@@ -23,27 +23,6 @@ def score(done):
 
 best = {}
 
-def all_routes(done=None):
-    if done is None:
-        done = []
-        pos = "AA"
-    else:
-        pos = done[-1][1]
-
-    if len(done) == time:
-        return [done]
-
-    out = [done + [("skip", pos)] * (time-len(done))]
-
-    if sum(j for i, j in flow.items() if ("on", i) not in done) == 0:
-        return out
-
-    if ("on", pos) not in done:
-        out += all_routes(done + [("on", pos)])
-    for i in tunnels[pos]:
-        out += all_routes(done + [("move", i)])
-    return out
-
 def best_route(done=None):
     global best
     routes = []
@@ -94,14 +73,4 @@ def best_route(done=None):
 # start = [('move', 'DD'), ('on', 'DD'), ('move', 'CC'), ('move', 'BB'), ('on', 'BB'), ('move', 'AA'), ('move', 'II'), ('move', 'JJ'), ('on', 'JJ'), ('move', 'II'), ('move', 'AA'), ('move', 'DD'), ('move', 'EE')]
 start = None
 r = best_route(start)
-print(r)
 print(score(r))
-
-maxf = -1
-best = None
-for r in all_routes(start):
-    if score(r) > maxf:
-        maxf = score(r)
-        best = r
-print(best)
-print(maxf)
