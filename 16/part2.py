@@ -13,64 +13,43 @@ with open("input") as f:
 
 time = 26
 
-def score(done):
-    return sum(done.values())
-
 best = {}
 
-def best_route(pos="AA", pos2="AA", t=0, done=None):
+def best_route(pos="AA", pos2="AA", t=0, on=None, score=0):
     global best
-    routes = []
-    if done is None:
-        done = {}
+    if on is None:
+        on = []
 
     if t == time:
-        return done
-
-    on = tuple(sorted(list(done.keys())))
+        return score
 
     if sum(j for i, j in flow.items() if i not in on) == 0:
-        return done
+        return score
 
-    info = (pos, pos2, on, t)
+    info = (pos, pos2, tuple(sorted(on)), t)
     if info in best:
-        d = done.copy()
-        d.update(best[info])
-        return d
-
-    maxf = score(done)
-    route = done
+        return score + best[info]
 
     moves = []
     if pos not in on and flow[pos] > 0:
-        moves.append(({pos: flow[pos] * (time - t - 1)}, pos))
+        moves.append(([pos], flow[pos] * (time - t - 1), pos))
     for i in tunnels[pos]:
-        moves.append(({}, i))
+        moves.append(([], 0, i))
     moves2 = []
     if pos2 not in on and flow[pos2] > 0:
-        moves2.append(({pos2: flow[pos2] * (time - t - 1)}, pos2))
+        moves2.append(([pos2], flow[pos2] * (time - t - 1), pos2))
     for i in tunnels[pos2]:
-        moves2.append(({}, i))
+        moves2.append(([], 0, i))
+
+    max_s = -1
 
     for m in moves:
         for m2 in moves2:
-            if m[0] != "on" or m != m2:
-                d = done.copy()
-                d.update(m[0])
-                d.update(m2[0])
-                r = best_route(m[1], m2[1], t + 1, d)
-                s = score(r)
-                if s > maxf:
-                    maxf = s
-                    route = r
+            if len(m[0]) == len(m2[0]) == 1 and m[0][0] == m2[0][0]:
+                continue
+            max_s = max(max_s, best_route(m[2], m2[2], t + 1, on + m[0] + m2[0], score + m[1] + m2[1]))
 
-    if info in best:
-        A = {i: j for i, j in route.items() if i not in done}
-        if A != best[info]:
-            from IPython import embed; embed()()
+    best[info] = max_s - score
+    return max_s
 
-    best[info] = {i: j for i, j in route.items() if i not in done}
-    return route
-
-r = best_route()
-print(score(r))
+print(best_route())
