@@ -1,9 +1,8 @@
 flow = {}
 tunnels = {}
 
-with open("test-input") as f:
+with open("input") as f:
     for line in f:
-        print(line)
         valve = line.split(" ")[1]
         flow[valve] = int(line.split("=")[1].split(";")[0])
         part = line.strip().split("to valve")[1]
@@ -12,44 +11,97 @@ with open("test-input") as f:
         part = part[1:]
         tunnels[valve] = part.split(", ")
 
-print(flow)
-print(tunnels)
+time = 30
+rooms = sorted(list(flow.keys()))
 
 def score(done):
     out = 0
     for i, (j, k) in enumerate(done):
         if j == "on":
-            out += (30 - i - 1) * flow[k]
+            out += (time - i - 1) * flow[k]
     return out
 
-maxf = 0
+best = {}
 
 def all_routes(done=None):
-    global maxf
-
-    routes = []
     if done is None:
         done = []
         pos = "AA"
     else:
         pos = done[-1][1]
 
-    if len(done) == 30:
-        s = score(done)
+    if len(done) == time:
+        return [done]
+
+    out = [done + [("skip", pos)] * (time-len(done))]
+
+    if sum(j for i, j in flow.items() if ("on", i) not in done) == 0:
+        return out
+
+    if ("on", pos) not in done:
+        out += all_routes(done + [("on", pos)])
+    for i in tunnels[pos]:
+        out += all_routes(done + [("move", i)])
+    return out
+
+def best_route(done=None):
+    global best
+    routes = []
+    if done is None:
+        pos = "AA"
+        done = []
+    else:
+        pos = done[-1][1]
+
+    if len(done) == time:
+        return done
+
+    route = done + [("skip", pos) for i in range(time-len(done))]
+    if sum(j for i, j in flow.items() if ("on", i) not in done) == 0:
+        return route
+
+    info = (pos, tuple(i for i in rooms if ("on", i) in done), len(done))
+    if info in best:
+        return done + best[info]
+
+    maxf = score(route)
+    if len(done) > 0 and done[-1][0] == "move" and ("on", pos) not in done and flow[pos] > 0:
+        r = best_route(done + [("on", pos)])
+        s = score(r)
         if s > maxf:
             maxf = s
-            print(done)
-            print(maxf)
-        return
-
-    routes = []
-    if len(done) > 0 and done[-1][0] == "move" and ("on", pos) not in done and flow[pos] > 0:
-        all_routes(done + [("on", pos)])
-    movesonly = [j for i, j in done if i == "move"]
+            route = r
     for i in tunnels[pos]:
-        if len(movesonly) >= 3 and movesonly[-1] == movesonly[-3] and movesonly[-2] == i:
+        if len(done) >= 3 and done[-1][0] == done[-2][0] == done[-3][0] == "move" and done[-1][1] == done[-3][1] and done[-2][1] == i:
             continue
-        all_routes(done + [("move", i)])
+        r = best_route(done + [("move", i)])
+        s = score(r)
+        if s > maxf:
+            maxf = s
+            route = r
+    assert route is not None
+    #i = time - 1
+    #while route[i][0] != "on":
+    #    i -= 1
+    #route = route[:i + 1] + [("skip", route[i][1])] * (time - i - 1)
+    #if info in best:
+    #    if route != best[info]:
+    #        from IPython import embed; embed()
+    #    assert route == best[info]
+    best[info] = route[len(done):]
+    return route
 
-for r in all_routes():
-    print(r)
+# start = [('move', 'DD'), ('on', 'DD'), ('move', 'CC'), ('move', 'BB'), ('on', 'BB'), ('move', 'AA'), ('move', 'II'), ('move', 'JJ'), ('on', 'JJ'), ('move', 'II'), ('move', 'AA'), ('move', 'DD'), ('move', 'EE')]
+start = None
+r = best_route(start)
+print(r)
+print(score(r))
+
+maxf = -1
+best = None
+for r in all_routes(start):
+    if score(r) > maxf:
+        maxf = score(r)
+        best = r
+print(best)
+print(maxf)
