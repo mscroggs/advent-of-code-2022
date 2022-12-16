@@ -12,72 +12,65 @@ with open("input") as f:
         tunnels[valve] = part.split(", ")
 
 time = 26
-rooms = sorted(list(flow.keys()))
 
-def score(done, done2):
-    out = 0
-    for i, (j, k) in enumerate(done):
-        if j == "on":
-            out += (time - i - 1) * flow[k]
-    for i, (j, k) in enumerate(done2):
-        if j == "on":
-            out += (time - i - 1) * flow[k]
-    return out
+def score(done):
+    return sum(done.values())
 
 best = {}
 
-def best_route(done=None, done2=None):
+def best_route(pos="AA", pos2="AA", t=0, done=None):
     global best
     routes = []
     if done is None:
-        pos = "AA"
-        pos2 = "AA"
-        done = []
-        done2 = []
-    else:
-        pos = done[-1][1]
-        pos2 = done2[-1][1]
+        done = {}
 
-    if len(done) == time:
-        return done, done2
+    if t == time:
+        return done
 
-    on = tuple(i for i in rooms if ("on", i) in done + done2)
+    on = tuple(sorted(list(done.keys())))
 
-    route = done + [("skip", pos) for i in range(time-len(done))], done2 + [("skip", pos2) for i in range(time-len(done2))]
     if sum(j for i, j in flow.items() if i not in on) == 0:
-        return route
+        return done
 
-    info = (pos, pos2, on, len(done))
+    info = (pos, pos2, on, t)
     if info in best:
-        return done + best[info][0], done2 + best[info][1]
+        d = done.copy()
+        d.update(best[info])
+        return d
 
-    maxf = score(*route)
+    maxf = score(done)
+    route = done
 
     moves = []
-    if len(done) > 0 and pos not in on and flow[pos] > 0:
-        moves.append(("on", pos))
+    if pos not in on and flow[pos] > 0:
+        moves.append(({pos: flow[pos] * (time - t - 1)}, pos))
     for i in tunnels[pos]:
-        if len(done) >= 3 and done[-1][0] == done[-2][0] == done[-3][0] == "move" and done[-1][1] == done[-3][1] and done[-2][1] == i:
-            continue
-        moves.append(("move", i))
+        moves.append(({}, i))
     moves2 = []
-    if len(done2) > 0 and pos2 not in on and flow[pos2] > 0:
-        moves2.append(("on", pos2))
+    if pos2 not in on and flow[pos2] > 0:
+        moves2.append(({pos2: flow[pos2] * (time - t - 1)}, pos2))
     for i in tunnels[pos2]:
-        if len(done2) >= 3 and done2[-1][0] == done2[-2][0] == done2[-3][0] == "move" and done2[-1][1] == done2[-3][1] and done2[-2][1] == i:
-            continue
-        moves2.append(("move", i))
+        moves2.append(({}, i))
 
     for m in moves:
         for m2 in moves2:
             if m[0] != "on" or m != m2:
-                r, r2 = best_route(done + [m], done2 + [m2])
-                s = score(r, r2)
+                d = done.copy()
+                d.update(m[0])
+                d.update(m2[0])
+                r = best_route(m[1], m2[1], t + 1, d)
+                s = score(r)
                 if s > maxf:
                     maxf = s
-                    route = r, r2
-    best[info] = (route[0][len(done):], route[1][len(done):])
+                    route = r
+
+    if info in best:
+        A = {i: j for i, j in route.items() if i not in done}
+        if A != best[info]:
+            from IPython import embed; embed()()
+
+    best[info] = {i: j for i, j in route.items() if i not in done}
     return route
 
 r = best_route()
-print(score(*r))
+print(score(r))
