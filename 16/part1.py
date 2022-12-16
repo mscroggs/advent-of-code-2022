@@ -59,18 +59,8 @@ def best_route(done=None):
             maxf = s
             route = r
     assert route is not None
-    #i = time - 1
-    #while route[i][0] != "on":
-    #    i -= 1
-    #route = route[:i + 1] + [("skip", route[i][1])] * (time - i - 1)
-    #if info in best:
-    #    if route != best[info]:
-    #        from IPython import embed; embed()
-    #    assert route == best[info]
     best[info] = route[len(done):]
     return route
 
-# start = [('move', 'DD'), ('on', 'DD'), ('move', 'CC'), ('move', 'BB'), ('on', 'BB'), ('move', 'AA'), ('move', 'II'), ('move', 'JJ'), ('on', 'JJ'), ('move', 'II'), ('move', 'AA'), ('move', 'DD'), ('move', 'EE')]
-start = None
-r = best_route(start)
+r = best_route()
 print(score(r))
