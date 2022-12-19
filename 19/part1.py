@@ -1,5 +1,3 @@
-from time import time
-
 items = ["ore", "clay", "obsidian"]
 
 options = []
