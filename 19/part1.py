@@ -34,7 +34,7 @@ class MultiItem:
         return f"ore: {self.ore}; clay: {self.clay}; obsidian: {self.obsidian}; geode: {self.geode}"
 
 options = []
-with open("test-input") as f:
+with open("input") as f:
     for line in f:
         o = []
         for r in line.strip().split(": ")[1].split(".")[:-1]:
