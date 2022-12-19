@@ -1,93 +1,78 @@
-class MultiItem:
-    def __init__(self, ore=0, clay=0, obsidian=0, geode=0):
-        self.ore = ore
-        self.clay = clay
-        self.obsidian = obsidian
-        self.geode = geode
+from time import time
 
-    def __add__(self, other):
-        return MultiItem(
-            ore=self.ore + other.ore,
-            clay=self.clay + other.clay,
-            obsidian=self.obsidian + other.obsidian,
-            geode=self.geode + other.geode
-        )
-
-    def __sub__(self, other):
-        return MultiItem(
-            ore=self.ore - other.ore,
-            clay=self.clay - other.clay,
-            obsidian=self.obsidian - other.obsidian,
-            geode=self.geode - other.geode
-        )
-
-    def __eq__(self, other):
-        return self.ore == other.ore and self.clay == other.clay and self.obsidian == other.obsidian
-
-    def __le__(self, other):
-        return self.ore <= other.ore and self.clay <= other.clay and self.obsidian <= other.obsidian and self.geode <= other.geode
-
-    def __lt__(self, other):
-        return self.ore < other.ore and self.clay < other.clay and self.obsidian < other.obsidian and self.geode < other.geode
-
-    def __repr__(self):
-        return f"ore: {self.ore}; clay: {self.clay}; obsidian: {self.obsidian}; geode: {self.geode}"
+items = ["ore", "clay", "obsidian"]
 
 options = []
 with open("input") as f:
     for line in f:
-        o = []
+        o = {"geode": None}
         for r in line.strip().split(": ")[1].split(".")[:-1]:
-            materials = {}
+            materials = {i: 0 for i in items}
             target = r.strip().split(" ")[1]
             r = r.split("costs")[1].strip()
             for i in r.split("and"):
                 n, item = i.strip().split(" ")
                 materials[item] = int(n)
-            o.append((MultiItem(**{target: 1}), MultiItem(**materials)))
-        assert o[-1][0].geode == 1
-        options.append(o[::-1])
+            o[target] = materials
+        options.append(o)
 
 T = 24
 
 best = 0
-def generate_options(blueprint, maxes, robots=MultiItem(ore=1), inventory=MultiItem(), t=0):
+found = {i: {} for i in range(T)}
+def generate_options(blueprint, maxes, robots={i: 1 if i == "ore" else 0 for i in items}, inventory={i: 0 for i in items}, t=0, score=0):
     global best
-    if robots.ore > maxes.ore or robots.clay > maxes.clay or robots.obsidian > maxes.obsidian:
-        return
-    if robots.ore >= blueprint[0][1].ore and robots.clay >= blueprint[0][1].clay and robots.obsidian >= blueprint[0][1].obsidian:
-        if robots.ore > blueprint[0][1].ore or robots.clay > blueprint[0][1].clay or robots.obsidian > blueprint[0][1].obsidian:
-            return
-    if t == 24:
-        if inventory.geode > best:
-            best = inventory.geode
-            print(best)
-        return
+    global found
+    if t == T:
+        if score > best:
+            best = score
+            print(score)
+        return score
 
-    if inventory.geode + robots.geode * (24 - t) + (24-t)*(25-t)//2 < best:
-       return
+    if score + (T-t)*(T+1-t)//2 < best:
+        return 0
+
+    key = tuple(robots.values())
+    key2 = tuple(inventory.values())
+    if key not in found[t]:
+        found[t][key] = {}
+    if key2 in found[t][key]:
+        return found[t][key][key2] + score
 
     c = False
-    for build, cost in blueprint:
-        if cost <= inventory:
-            generate_options(blueprint, maxes, robots + build, inventory - cost + robots, t+1)
-        else:
-            c = True
+    result = None
+    for build, cost in blueprint.items():
+        if build == "geode" or robots[build] < maxes[build]:
+            if all(cost[i] <= inventory[i] for i in items):
+                if build == "geode":
+                    r = generate_options(blueprint, maxes, {i: robots[i] + 1 if i == build else robots[i] for i in items}, {i: inventory[i] - cost[i] + robots[i] for i in items}, t+1, score + (T-t-1))
+                else:
+                    r = generate_options(blueprint, maxes, {i: robots[i] + 1 if i == build else robots[i] for i in items}, {i: inventory[i] - cost[i] + robots[i] for i in items}, t+1, score)
+                if r is not None:
+                    if result is None:
+                        result = r
+                    result = max(result, r)
+            else:
+                c = True
     if c:
-        generate_options(blueprint, maxes, robots, inventory + robots, t+1)
+        r = generate_options(blueprint, maxes, robots, {i: inventory[i] + robots[i] for i in items}, t+1, score)
+        if r is not None:
+            if result is None:
+                result = r
+            result = max(result, r)
+    if result is not None:
+        found[t][key][key2] = result - score
+    return result
 
 
 result = 0
-for i, b in enumerate(options):
-    print("==", i, "==")
+for n, b in enumerate(options):
+    print("==", n, "==")
     best = 0
-    maxes = MultiItem(
-        ore=max(i.ore for _, i in b),
-        clay=max(i.clay for _, i in b),
-        obsidian=max(i.obsidian for _, i in b),
-    )
+    found = {i: {} for i in range(T)}
+    maxes = {i: max(m[i] for m in b.values()) for i in items}
     generate_options(b, maxes)
-    result += (i + 1) * best
+    result += (n + 1) * best
 
 print()
 print(result)
