@@ -46,12 +46,6 @@ while moved:
 
     directions = directions[1:] + directions[:1]
     assert len(proposed) == len(elves)
-    #for y in range(min(y for x, y in elves), 1 + max(y for x, y in elves)):
-    #    print("".join(
-    #        "#" if (x, y) in elves else "."
-    #        for x in range(min(x for x, y in elves), 1 + max(x for x, y in elves))
-    #    ))
-    #print("-"*30)
     if N == 10:
         break
 
